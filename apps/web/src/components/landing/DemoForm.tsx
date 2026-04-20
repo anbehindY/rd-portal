@@ -247,25 +247,18 @@ export default function DemoForm() {
             id="country"
             name="country"
             value={country}
+            placeholder="Select country"
+            options={COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
             error={Boolean(fieldErrors.country)}
             aria-describedby={
               fieldErrors.country ? "country-error" : undefined
             }
-            onChange={(e) => {
-              setCountry(e.target.value);
+            onValueChange={(v) => {
+              setCountry(v);
               clearFieldError("country");
             }}
             disabled={submitting}
-          >
-            <option value="" disabled>
-              Select country
-            </option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          />
         </FormField>
 
         <FormField

@@ -12,7 +12,7 @@ model Lead {
   name          String
   businessEmail String
   country       String
-  message       String
+  message       String?
   createdAt     DateTime @default(now())
 
   @@index([businessEmail])

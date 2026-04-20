@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsISO31661Alpha2, IsString, Length } from 'class-validator';
+import { IsEmail, IsISO31661Alpha2, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateLeadDto {
   @IsString()
@@ -16,8 +16,9 @@ export class CreateLeadDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   country!: string;
 
+  @IsOptional()
   @IsString()
-  @Length(1, 2000)
+  @Length(0, 2000)
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  message!: string;
+  message?: string;
 }
