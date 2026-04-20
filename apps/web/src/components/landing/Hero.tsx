@@ -3,9 +3,9 @@ import Image from "next/image";
 export default function Hero() {
   return (
     <section className="mx-auto max-w-360 pl-6 pr-4 md:pl-12 md:pr-6 lg:pl-24 lg:pr-12 xl:pl-32 xl:pr-16 py-12 md:py-16 lg:py-24">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_720px] gap-8 md:gap-10 items-center mt-4">
-        <div className="flex flex-col gap-6 md:gap-8 lg:gap-10">
-          <h1 className="font-inter font-extrabold uppercase text-[#262626] text-5xl md:text-[52px] lg:text-[56px] xl:text-[56px] leading-[1.1] tracking-normal">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_minmax(0,720px)] gap-8 md:gap-10 items-center mt-4">
+        <div className="flex flex-col gap-6 md:gap-8 lg:gap-10 min-w-0">
+          <h1 className="font-inter font-extrabold uppercase text-[#262626] text-[40px] sm:text-5xl md:text-[44px] lg:text-[52px] xl:text-[56px] leading-[1.1] tracking-normal">
             Top Scorer
             <br />
             To the Final
@@ -25,7 +25,7 @@ export default function Hero() {
             </button>
           </div>
         </div>
-        <div className="relative w-full max-w-180 aspect-720/580 justify-self-center md:justify-self-end">
+        <div className="relative w-full max-w-180 aspect-720/580 justify-self-center md:justify-self-end min-w-0">
           <Image
             src="/images/basketball-player-action-sunset 1.png"
             alt="Basketball player in action at sunset"

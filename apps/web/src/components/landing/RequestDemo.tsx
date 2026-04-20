@@ -19,8 +19,8 @@ export default function RequestDemo() {
       </div>
 
       <div className="rounded-2xl bg-white border border-zinc-200 overflow-hidden shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr] md:h-163.5">
-          <div className="relative min-h-[400px] md:min-h-full w-full">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr] lg:min-h-163.5">
+          <div className="relative h-56 sm:h-72 md:h-auto md:min-h-full w-full">
             <Image
               src="/images/form-image.png"
               alt="Aerial view of cliff and river"
@@ -29,7 +29,7 @@ export default function RequestDemo() {
               className="object-cover"
             />
           </div>
-          <div className="p-6 md:p-10">
+          <div className="p-6 sm:p-8 md:p-8 lg:p-10">
             <DemoForm />
           </div>
         </div>

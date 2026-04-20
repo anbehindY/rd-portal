@@ -1,10 +1,11 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
 
-type TextTileProps = { label: string };
+type TextTileProps = { label: ReactNode };
 function TextTile({ label }: TextTileProps) {
   return (
-    <div className="flex flex-1 items-center justify-center rounded-md bg-[#EBEEF3] px-6 py-4 w-full">
-      <span className="text-2xl md:text-3xl font-extrabold text-[#262626] tracking-tight whitespace-nowrap">
+    <div className="flex flex-1 items-center justify-center rounded-md bg-[#EBEEF3] px-3 py-4 w-full min-h-32 sm:min-h-36">
+      <span className="text-[28px] md:text-[32px] lg:text-[36px] font-extrabold text-[#262626] tracking-tight text-center whitespace-nowrap">
         {label}
       </span>
     </div>
@@ -14,27 +15,19 @@ function TextTile({ label }: TextTileProps) {
 type ImageTileProps = {
   src: string;
   alt: string;
-  width: number;
-  height: number;
+  aspect: string;
   bg?: string;
 };
-function ImageTile({
-  src,
-  alt,
-  width,
-  height,
-  bg = "bg-zinc-100",
-}: ImageTileProps) {
+function ImageTile({ src, alt, aspect, bg = "bg-zinc-100" }: ImageTileProps) {
   return (
     <div
-      className={`relative rounded-md overflow-hidden ${bg}`}
-      style={{ width, height }}
+      className={`relative w-full rounded-md overflow-hidden ${bg} ${aspect}`}
     >
       <Image
         src={src}
         alt={alt}
         fill
-        sizes="270px"
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 270px"
         className="object-contain"
       />
     </div>
@@ -47,40 +40,36 @@ export default function CategoryGrid() {
       <h2 className="text-[32px] md:text-4xl font-bold text-[#262626] mb-3">
         Category
       </h2>
-      <div className="flex flex-wrap gap-x-7.5 gap-y-6">
-        <div className="flex flex-col gap-4 w-67.5 h-108.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-7.5 gap-y-6">
+        <div className="flex flex-col gap-4 w-full h-full">
           <TextTile label="FOOTBALL" />
           <ImageTile
             src="/images/soccer-ball-green-grass-soccer-field-generative-ai 1.png"
             alt="Soccer ball on grass"
-            width={270}
-            height={288}
+            aspect="aspect-270/288"
           />
         </div>
-        <div className="flex flex-col gap-4 w-67.5 h-108.5">
+        <div className="flex flex-col gap-4 w-full h-full">
           <ImageTile
             src="/images/close-up-basketball-outdoors 1.png"
             alt="Basketball close-up"
-            width={270}
-            height={235}
+            aspect="aspect-270/235"
           />
           <TextTile label="BASKET BALL" />
         </div>
-        <div className="flex flex-col gap-4 w-67.5 h-108.5">
+        <div className="flex flex-col gap-4 w-full h-full">
           <TextTile label="CAR SPORT" />
           <ImageTile
             src="/images/sport-car-is-drifting-track-with-smoke-around-it 1.png"
             alt="Sports car drifting"
-            width={270}
-            height={288}
+            aspect="aspect-270/288"
           />
         </div>
-        <div className="flex flex-col gap-4 w-67.5 h-108.5">
+        <div className="flex flex-col gap-4 w-full h-full">
           <ImageTile
             src="/images/red-ping-pong-racket-sports-equipment 1.png"
             alt="Red ping-pong racket"
-            width={270}
-            height={286}
+            aspect="aspect-270/286"
             bg="bg-black"
           />
           <TextTile label="TABLE TENNIS" />
