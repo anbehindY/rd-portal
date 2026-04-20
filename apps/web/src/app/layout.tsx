@@ -30,9 +30,9 @@ const logoFont = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Sport News",
+  title: "Request Demo Portal",
   description:
-    "Sport News — the latest highlights, standings, and stories across football, basketball, motorsport, and more.",
+    "Request a personalized demo — tell us about your needs and our team will reach out within 2 hours.",
 };
 
 export default function RootLayout({

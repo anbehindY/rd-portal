@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { COUNTRIES } from "@/lib/countries";
 import FormField from "@/components/ui/FormField";
 import Input from "@/components/ui/Input";
@@ -10,16 +13,35 @@ import Button from "@/components/ui/Button";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const MESSAGE_MAX = 2000;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Status =
+const COUNTRY_CODES = COUNTRIES.map((c) => c.code) as [string, ...string[]];
+
+const demoFormSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Please enter your full name (at least 2 characters).")
+    .max(120, "Name must be 120 characters or fewer."),
+  businessEmail: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .email("Please enter a valid email address.")
+    .max(254, "Email must be 254 characters or fewer."),
+  country: z
+    .enum(COUNTRY_CODES, { message: "Please select your country." }),
+  message: z
+    .string()
+    .max(MESSAGE_MAX, `Message must be ${MESSAGE_MAX} characters or fewer.`)
+    .optional(),
+});
+
+type DemoFormValues = z.infer<typeof demoFormSchema>;
+
+type SubmitStatus =
   | { kind: "idle" }
-  | { kind: "submitting" }
   | { kind: "success" }
   | { kind: "error"; message: string };
-
-type FieldKey = "name" | "businessEmail" | "country" | "message";
-type FieldErrors = Partial<Record<FieldKey, string>>;
 
 function extractErrorMessage(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
@@ -31,80 +53,40 @@ function extractErrorMessage(body: unknown): string | null {
   return null;
 }
 
-function validate(values: {
-  name: string;
-  businessEmail: string;
-  country: string;
-  message: string;
-}): FieldErrors {
-  const errors: FieldErrors = {};
-  const name = values.name.trim();
-  const email = values.businessEmail.trim();
-  const country = values.country.trim();
-  const message = values.message;
-
-  if (name.length < 2) {
-    errors.name = "Please enter your full name (at least 2 characters).";
-  }
-  if (!email) {
-    errors.businessEmail = "Email is required.";
-  } else if (!EMAIL_REGEX.test(email)) {
-    errors.businessEmail = "Please enter a valid email address.";
-  }
-  if (!country) {
-    errors.country = "Please select your country.";
-  }
-  if (message.length > MESSAGE_MAX) {
-    errors.message = `Message must be ${MESSAGE_MAX} characters or fewer.`;
-  }
-  return errors;
-}
-
 export default function DemoForm() {
-  const [name, setName] = useState("");
-  const [businessEmail, setBusinessEmail] = useState("");
-  const [country, setCountry] = useState("");
-  const [message, setMessage] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [status, setStatus] = useState<SubmitStatus>({ kind: "idle" });
 
-  function clearFieldError(key: FieldKey) {
-    setFieldErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  }
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<DemoFormValues>({
+    resolver: zodResolver(demoFormSchema),
+    defaultValues: {
+      name: "",
+      businessEmail: "",
+      country: undefined,
+      message: "",
+    },
+  });
 
   function resetForm() {
-    setName("");
-    setBusinessEmail("");
-    setCountry("");
-    setMessage("");
-    setFieldErrors({});
+    reset();
     setStatus({ kind: "idle" });
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    const errors = validate({ name, businessEmail, country, message });
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
-
-    const trimmedMessage = message.trim();
+  async function onSubmit(values: DemoFormValues) {
+    const trimmedMessage = values.message?.trim();
     const payload = {
-      name: name.trim(),
-      businessEmail: businessEmail.trim(),
-      country: country.trim(),
-      message: trimmedMessage.length ? trimmedMessage : undefined,
+      name: values.name.trim(),
+      businessEmail: values.businessEmail.trim(),
+      country: values.country.trim(),
+      message: trimmedMessage && trimmedMessage.length > 0 ? trimmedMessage : undefined,
     };
 
-    setFieldErrors({});
-    setStatus({ kind: "submitting" });
+    setStatus({ kind: "idle" });
 
     try {
       const res = await fetch(`${API_URL}/leads`, {
@@ -173,8 +155,6 @@ export default function DemoForm() {
     );
   }
 
-  const submitting = status.kind === "submitting";
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -186,28 +166,27 @@ export default function DemoForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-5"
+        noValidate
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             label="Full Name"
             htmlFor="name"
             required
-            error={fieldErrors.name}
+            error={errors.name?.message}
           >
             <Input
               id="name"
-              name="name"
               type="text"
               autoComplete="name"
               placeholder="Enter full name"
-              value={name}
-              error={Boolean(fieldErrors.name)}
-              aria-describedby={fieldErrors.name ? "name-error" : undefined}
-              onChange={(e) => {
-                setName(e.target.value);
-                clearFieldError("name");
-              }}
-              disabled={submitting}
+              error={Boolean(errors.name)}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              disabled={isSubmitting}
+              {...register("name")}
             />
           </FormField>
 
@@ -215,24 +194,19 @@ export default function DemoForm() {
             label="Email"
             htmlFor="businessEmail"
             required
-            error={fieldErrors.businessEmail}
+            error={errors.businessEmail?.message}
           >
             <Input
               id="businessEmail"
-              name="businessEmail"
               type="email"
               autoComplete="email"
               placeholder="Enter email address"
-              value={businessEmail}
-              error={Boolean(fieldErrors.businessEmail)}
+              error={Boolean(errors.businessEmail)}
               aria-describedby={
-                fieldErrors.businessEmail ? "businessEmail-error" : undefined
+                errors.businessEmail ? "businessEmail-error" : undefined
               }
-              onChange={(e) => {
-                setBusinessEmail(e.target.value);
-                clearFieldError("businessEmail");
-              }}
-              disabled={submitting}
+              disabled={isSubmitting}
+              {...register("businessEmail")}
             />
           </FormField>
         </div>
@@ -241,23 +215,27 @@ export default function DemoForm() {
           label="Select Country"
           htmlFor="country"
           required
-          error={fieldErrors.country}
+          error={errors.country?.message}
         >
-          <Select
-            id="country"
+          <Controller
+            control={control}
             name="country"
-            value={country}
-            placeholder="Select country"
-            options={COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
-            error={Boolean(fieldErrors.country)}
-            aria-describedby={
-              fieldErrors.country ? "country-error" : undefined
-            }
-            onValueChange={(v) => {
-              setCountry(v);
-              clearFieldError("country");
-            }}
-            disabled={submitting}
+            render={({ field }) => (
+              <Select
+                id="country"
+                name={field.name}
+                value={field.value ?? ""}
+                placeholder="Select country"
+                options={COUNTRIES.map((c) => ({
+                  value: c.code,
+                  label: c.name,
+                }))}
+                error={Boolean(errors.country)}
+                aria-describedby={errors.country ? "country-error" : undefined}
+                onValueChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
           />
         </FormField>
 
@@ -265,24 +243,17 @@ export default function DemoForm() {
           label="Message"
           htmlFor="message"
           optional
-          error={fieldErrors.message}
+          error={errors.message?.message}
         >
           <Textarea
             id="message"
-            name="message"
             rows={4}
             maxLength={MESSAGE_MAX}
             placeholder="Tell us about your needs..."
-            value={message}
-            error={Boolean(fieldErrors.message)}
-            aria-describedby={
-              fieldErrors.message ? "message-error" : undefined
-            }
-            onChange={(e) => {
-              setMessage(e.target.value);
-              clearFieldError("message");
-            }}
-            disabled={submitting}
+            error={Boolean(errors.message)}
+            aria-describedby={errors.message ? "message-error" : undefined}
+            disabled={isSubmitting}
+            {...register("message")}
           />
         </FormField>
 
@@ -299,10 +270,10 @@ export default function DemoForm() {
           type="submit"
           variant="primary"
           size="lg"
-          loading={submitting}
+          loading={isSubmitting}
           className="mt-1 w-full"
         >
-          {submitting ? "Submitting\u2026" : "Request Demo"}
+          {isSubmitting ? "Submitting\u2026" : "Request Demo"}
         </Button>
 
         <p className="text-center text-xs text-zinc-500 mt-1">
