@@ -22,7 +22,7 @@ export default function RequestDemo() {
         <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr] lg:min-h-163.5">
           <div className="relative h-56 sm:h-72 md:h-auto md:min-h-full w-full">
             <Image
-              src="/images/form-image.png"
+              src="/images/form-image.webp"
               alt="Aerial view of cliff and river"
               fill
               sizes="(max-width: 768px) 100vw, 40vw"

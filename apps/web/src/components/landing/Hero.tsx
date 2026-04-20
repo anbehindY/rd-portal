@@ -27,7 +27,7 @@ export default function Hero() {
         </div>
         <div className="relative w-full max-w-180 aspect-720/580 justify-self-center md:justify-self-end min-w-0">
           <Image
-            src="/images/basketball-player-action-sunset 1.png"
+            src="/images/basketball-player-action-sunset-1.webp"
             alt="Basketball player in action at sunset"
             fill
             priority

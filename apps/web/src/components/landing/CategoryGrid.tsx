@@ -44,14 +44,14 @@ export default function CategoryGrid() {
         <div className="flex flex-col gap-4 w-full h-full">
           <TextTile label="FOOTBALL" />
           <ImageTile
-            src="/images/soccer-ball-green-grass-soccer-field-generative-ai 1.png"
+            src="/images/soccer-ball-green-grass-soccer-field-generative-ai-1.webp"
             alt="Soccer ball on grass"
             aspect="aspect-270/288"
           />
         </div>
         <div className="flex flex-col gap-4 w-full h-full">
           <ImageTile
-            src="/images/close-up-basketball-outdoors 1.png"
+            src="/images/close-up-basketball-outdoors-1.webp"
             alt="Basketball close-up"
             aspect="aspect-270/235"
           />
@@ -60,14 +60,14 @@ export default function CategoryGrid() {
         <div className="flex flex-col gap-4 w-full h-full">
           <TextTile label="CAR SPORT" />
           <ImageTile
-            src="/images/sport-car-is-drifting-track-with-smoke-around-it 1.png"
+            src="/images/sport-car-is-drifting-track-with-smoke-around-it-1.webp"
             alt="Sports car drifting"
             aspect="aspect-270/288"
           />
         </div>
         <div className="flex flex-col gap-4 w-full h-full">
           <ImageTile
-            src="/images/red-ping-pong-racket-sports-equipment 1.png"
+            src="/images/red-ping-pong-racket-sports-equipment-1.webp"
             alt="Red ping-pong racket"
             aspect="aspect-270/286"
             bg="bg-black"
