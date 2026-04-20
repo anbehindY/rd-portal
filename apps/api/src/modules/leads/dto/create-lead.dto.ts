@@ -1,10 +1,11 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsISO31661Alpha2, IsOptional, IsString, Length } from 'class-validator';
+import { sanitizePlainText } from '../../../core/security/sanitize';
 
 export class CreateLeadDto {
   @IsString()
   @Length(1, 120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }) => sanitizePlainText(value))
   name!: string;
 
   @IsEmail()
@@ -19,6 +20,6 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   @Length(0, 2000)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }) => sanitizePlainText(value))
   message?: string;
 }
