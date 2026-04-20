@@ -7,7 +7,7 @@
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
-    "test:e2e": "jest --config test/jest-e2e.config.ts",
+    "test:e2e": "jest --config test/jest-e2e.config.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "postinstall": "prisma generate"

@@ -124,7 +124,5 @@ jobs:
       - name: Apply Prisma migrations
         run: pnpm --filter @rd-portal/api exec prisma migrate deploy
 
-      # Tests are scaffolded — when `pnpm --filter @rd-portal/api test`
-      # has specs, uncomment the step below. Prisma + Postgres are already wired.
-      # - name: Test
-      #   run: pnpm --filter @rd-portal/api test
+      - name: E2E
+        run: pnpm --filter @rd-portal/api test:e2e
