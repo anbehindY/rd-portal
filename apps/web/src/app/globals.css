@@ -20,3 +20,27 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+@keyframes splashFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.splash-fade {
+  opacity: 0;
+  animation: splashFadeUp 420ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-fade {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

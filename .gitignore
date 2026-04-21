@@ -16,3 +16,4 @@ apps/api/prisma/*.db-journal
 # os / editor
 .DS_Store
 *.log
+.claude
