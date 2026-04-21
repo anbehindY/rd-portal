@@ -12,19 +12,18 @@ RUN pnpm install --frozen-lockfile --filter @rd-portal/api...
 
 FROM deps AS build
 COPY apps/api ./apps/api
-# Build, then produce a symlink-free standalone bundle at /out.
-# pnpm's workspace node_modules uses symlinks into /repo/node_modules/.pnpm
-# that don't survive a simple COPY — `deploy` resolves them into real files.
+# Deploy into /app directly (matches the runtime WORKDIR). pnpm deploy bakes
+# absolute paths into bin wrappers' NODE_PATH, so the path must match at runtime.
 RUN pnpm --filter @rd-portal/api exec prisma generate \
  && pnpm --filter @rd-portal/api build \
- && pnpm --filter @rd-portal/api deploy /out
+ && pnpm --filter @rd-portal/api deploy /app
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 # OpenSSL is required by Prisma engines at runtime; alpine doesn't ship it.
 RUN apk add --no-cache openssl
 ENV NODE_ENV=production
-COPY --from=build /out ./
+COPY --from=build --chown=node:node /app /app
 EXPOSE 3001
 USER node
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/main.js"]

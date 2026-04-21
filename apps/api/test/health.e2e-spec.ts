@@ -12,6 +12,7 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -27,8 +28,8 @@ describe('Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /health → 200 with liveness payload', async () => {
-    const res = await request(app.getHttpServer()).get('/health').expect(200);
+  it('GET /api/health → 200 with liveness payload', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health').expect(200);
 
     expect(res.body.status).toBe('ok');
     expect(typeof res.body.uptime).toBe('number');
@@ -37,8 +38,8 @@ describe('Health (e2e)', () => {
     expect(Number.isNaN(Date.parse(res.body.timestamp))).toBe(false);
   });
 
-  it('GET /health/ready → 200 with db up when Postgres is reachable', async () => {
-    const res = await request(app.getHttpServer()).get('/health/ready').expect(200);
+  it('GET /api/health/ready → 200 with db up when Postgres is reachable', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health/ready').expect(200);
     expect(res.body).toEqual({ status: 'ok', db: 'up' });
   });
 });

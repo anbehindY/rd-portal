@@ -26,6 +26,8 @@ data "aws_iam_policy_document" "ecs_assume" {
   }
 }
 
+# Execution role: pulls images, reads secrets, writes logs. Used by the
+# ECS agent, not the container itself.
 resource "aws_iam_role" "execution" {
   name               = "${var.name}-ecs-exec"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
@@ -46,6 +48,14 @@ resource "aws_iam_role_policy" "execution_secrets" {
       Resource = [aws_secretsmanager_secret.db_url.arn]
     }]
   })
+}
+
+# Task role: AWS API permissions the application itself needs. Empty for now
+# but wired in so future work (S3 uploads, SES, SQS) has a place to go without
+# widening the execution role.
+resource "aws_iam_role" "task" {
+  name               = "${var.name}-ecs-task"
+  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 # -----------------------------------------------------------------------------
@@ -89,6 +99,7 @@ resource "aws_ecs_task_definition" "api" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.execution.arn
+  task_role_arn            = aws_iam_role.task.arn
   runtime_platform {
     cpu_architecture        = "X86_64"
     operating_system_family = "LINUX"
@@ -100,9 +111,9 @@ resource "aws_ecs_task_definition" "api" {
     essential = true
     portMappings = [{ containerPort = 3001 }]
     environment = [
-      { name = "NODE_ENV",    value = "production" },
-      { name = "PORT",        value = "3001" },
-      { name = "CORS_ORIGIN", value = "http://${aws_lb.main.dns_name}" },
+      { name = "NODE_ENV", value = "production" },
+      { name = "PORT",     value = "3001" },
+      # Same-origin via ALB path-based routing — no CORS needed.
     ]
     secrets = [
       { name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.db_url.arn },
@@ -125,6 +136,7 @@ resource "aws_ecs_task_definition" "web" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.execution.arn
+  task_role_arn            = aws_iam_role.task.arn
   runtime_platform {
     cpu_architecture        = "X86_64"
     operating_system_family = "LINUX"
@@ -173,7 +185,7 @@ resource "aws_ecs_service" "api" {
     container_port   = 3001
   }
 
-  depends_on = [aws_lb_listener.api]
+  depends_on = [aws_lb_listener_rule.api]
   # Ignore the task definition so `aws ecs update-service --force-new-deployment`
   # from CI can roll new images without Terraform reverting them.
   lifecycle {
@@ -204,7 +216,7 @@ resource "aws_ecs_service" "web" {
     container_port   = 3000
   }
 
-  depends_on = [aws_lb_listener.web]
+  depends_on = [aws_lb_listener.http]
   lifecycle {
     ignore_changes = [task_definition, desired_count]
   }

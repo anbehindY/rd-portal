@@ -1,14 +1,13 @@
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    aws    = { source = "hashicorp/aws",    version = "~> 5.0" }
-    random = { source = "hashicorp/random", version = "~> 3.6" }
-  }
-}
-
 provider "aws" {
   region  = var.region
   profile = var.profile
+
+  default_tags {
+    tags = {
+      Project = var.name
+      Env     = "poc"
+    }
+  }
 }
 
 data "aws_availability_zones" "available" {
@@ -66,17 +65,9 @@ resource "aws_security_group" "alb" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    description = "Web"
+    description = "HTTP (web + /api/* routed to api)"
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "API"
-    from_port   = 8080
-    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

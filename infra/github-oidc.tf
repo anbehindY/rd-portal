@@ -4,9 +4,13 @@
 # -----------------------------------------------------------------------------
 
 resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  # Two thumbprints so certificate rotation on GitHub's side doesn't break us.
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+  ]
 }
 
 data "aws_iam_policy_document" "github_assume" {
@@ -24,12 +28,12 @@ data "aws_iam_policy_document" "github_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Trust any workflow from this repo (branches, PRs, tags, environments).
-    # Tighten to "repo:${var.github_repo}:ref:refs/heads/main" in real projects.
+    # Scope to a single branch so a workflow on another ref can't assume
+    # this role. Change `deploy_branch` to swap which branch can deploy.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+      values   = ["repo:${var.github_repo}:ref:refs/heads/${var.deploy_branch}"]
     }
   }
 }

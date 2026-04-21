@@ -16,6 +16,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(express.json({ limit: "100kb" }));
+  app.setGlobalPrefix("api");
 
   const config = app.get(ConfigService<EnvVars, true>);
   // CSRF: API is stateless (no cookies/sessions) + CORS origin-restricted with

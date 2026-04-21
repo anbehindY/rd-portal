@@ -20,12 +20,15 @@ env:
   WEB_SERVICE: rd-portal-web
   API_REPO: rd-portal-api
   WEB_REPO: rd-portal-web
+  ALB_NAME: rd-portal-alb
 
 jobs:
-  deploy:
-    name: Build, push, roll
+  build-push:
+    name: Build & push images
     runs-on: ubuntu-latest
-    environment: production
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+      alb_dns: ${{ steps.meta.outputs.alb_dns }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,11 +37,21 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ECR
+      - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       - uses: docker/setup-buildx-action@v3
+
+      - name: Compute metadata
+        id: meta
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names "$ALB_NAME" \
+            --query 'LoadBalancers[0].DNSName' --output text)
+          echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
+          echo "ALB: $ALB_DNS · SHA: $SHORT_SHA"
 
       - name: Build & push API
         uses: docker/build-push-action@v6
@@ -47,7 +60,7 @@ jobs:
           file: apps/api/Dockerfile
           push: true
           tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.API_REPO }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.API_REPO }}:${{ steps.meta.outputs.sha }}
             ${{ steps.ecr.outputs.registry }}/${{ env.API_REPO }}:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,scope=api,mode=max
@@ -58,19 +71,32 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          # Same-origin: web hits /api on its own ALB, no build-time URL needed.
           tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.WEB_REPO }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.WEB_REPO }}:${{ steps.meta.outputs.sha }}
             ${{ steps.ecr.outputs.registry }}/${{ env.WEB_REPO }}:latest
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
 
-      - name: Roll ECS services
+  deploy:
+    name: Roll ECS services
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Force new deployment
         run: |
-          aws ecs update-service --cluster "$CLUSTER" --service "$API_SERVICE" --force-new-deployment >/dev/null
-          aws ecs update-service --cluster "$CLUSTER" --service "$WEB_SERVICE" --force-new-deployment >/dev/null
+          aws ecs update-service --cluster "$CLUSTER" --service "$API_SERVICE" --force-new-deployment --no-cli-pager >/dev/null
+          aws ecs update-service --cluster "$CLUSTER" --service "$WEB_SERVICE" --force-new-deployment --no-cli-pager >/dev/null
 
       - name: Wait for services stable
         run: |
           aws ecs wait services-stable --cluster "$CLUSTER" --services "$API_SERVICE" "$WEB_SERVICE"
+
+      - name: Summary
+        run: |
+          echo "Deployed \`${{ needs.build-push.outputs.sha }}\` → http://${{ needs.build-push.outputs.alb_dns }}" >> "$GITHUB_STEP_SUMMARY"

@@ -11,7 +11,9 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+// Same-origin by default (ALB routes /api/* to the API); override with
+// NEXT_PUBLIC_API_URL for local dev where web :3000 and api :3001 differ.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const MESSAGE_MAX = 2000;
 
 const COUNTRY_CODES = COUNTRIES.map((c) => c.code) as [string, ...string[]];
@@ -89,7 +91,7 @@ export default function DemoForm() {
     setStatus({ kind: "idle" });
 
     try {
-      const res = await fetch(`${API_URL}/leads`, {
+      const res = await fetch(`${API_URL}/api/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

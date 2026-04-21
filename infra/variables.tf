@@ -18,3 +18,9 @@ variable "github_repo" {
   type        = string
   description = "GitHub repo allowed to assume the deploy role, e.g. anbehindY/rd-portal"
 }
+
+variable "deploy_branch" {
+  type        = string
+  description = "Only this branch can assume the deploy role via OIDC"
+  default     = "main"
+}

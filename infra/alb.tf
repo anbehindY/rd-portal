@@ -1,7 +1,7 @@
-# Single ALB, two listeners:
-#   :80   → web target group (Next.js on 3000)
-#   :8080 → api target group (NestJS on 3001)
-# One ALB instead of two saves ~$16/mo.
+# Single ALB, single listener on :80.
+# Default action forwards to the web target group.
+# A listener rule routes /api/* to the api target group — same-origin from
+# the browser's perspective, so no CORS needed.
 
 resource "aws_lb" "main" {
   name               = "${var.name}-alb"
@@ -34,7 +34,7 @@ resource "aws_lb_target_group" "api" {
   vpc_id      = aws_vpc.main.id
 
   health_check {
-    path                = "/health/ready"
+    path                = "/api/health/ready"
     matcher             = "200"
     interval            = 30
     healthy_threshold   = 2
@@ -42,7 +42,7 @@ resource "aws_lb_target_group" "api" {
   }
 }
 
-resource "aws_lb_listener" "web" {
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
@@ -53,13 +53,18 @@ resource "aws_lb_listener" "web" {
   }
 }
 
-resource "aws_lb_listener" "api" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 8080
-  protocol          = "HTTP"
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 10
 
-  default_action {
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api", "/api/*"]
+    }
   }
 }

@@ -17,6 +17,7 @@ async function buildApp(): Promise<{ app: INestApplication; prisma: PrismaServic
   }).compile();
 
   const app = moduleRef.createNestApplication();
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -49,7 +50,7 @@ describe('Leads (e2e)', () => {
   describe('POST /leads', () => {
     it('creates a lead with a valid payload (201 + normalized persistence)', async () => {
       const res = await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           name: '  Jane Doe  ',
           businessEmail: '  Jane.Doe@Example.COM ',
@@ -77,7 +78,7 @@ describe('Leads (e2e)', () => {
 
     it('400 when businessEmail is invalid', async () => {
       const res = await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           name: 'Jane',
           businessEmail: 'not-an-email',
@@ -95,7 +96,7 @@ describe('Leads (e2e)', () => {
 
     it('400 when name is missing', async () => {
       await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           businessEmail: 'jane@example.com',
           country: 'US',
@@ -105,7 +106,7 @@ describe('Leads (e2e)', () => {
 
     it('400 when country is missing', async () => {
       await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           name: 'Jane',
           businessEmail: 'jane@example.com',
@@ -115,7 +116,7 @@ describe('Leads (e2e)', () => {
 
     it('400 when an unknown property is provided (forbidNonWhitelisted)', async () => {
       const res = await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           name: 'Jane',
           businessEmail: 'jane@example.com',
@@ -132,7 +133,7 @@ describe('Leads (e2e)', () => {
 
     it('strips HTML from name and message before persisting', async () => {
       const res = await request(app.getHttpServer())
-        .post('/leads')
+        .post('/api/leads')
         .send({
           name: '<script>alert(1)</script>Jane',
           businessEmail: 'jane+html@example.com',
@@ -153,7 +154,7 @@ describe('Leads (e2e)', () => {
       const statuses: number[] = [];
       for (let i = 0; i < 10; i++) {
         const res = await request(app.getHttpServer())
-          .post('/leads')
+          .post('/api/leads')
           .send({
             name: `User ${i}`,
             businessEmail: `user${i}@example.com`,

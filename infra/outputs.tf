@@ -7,7 +7,7 @@ output "web_url" {
 }
 
 output "api_url" {
-  value = "http://${aws_lb.main.dns_name}:8080"
+  value = "http://${aws_lb.main.dns_name}/api"
 }
 
 output "ecr_api_url" {
