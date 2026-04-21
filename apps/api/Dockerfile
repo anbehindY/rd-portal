@@ -12,16 +12,17 @@ RUN pnpm install --frozen-lockfile --filter @rd-portal/api...
 
 FROM deps AS build
 COPY apps/api ./apps/api
+# Build, then produce a symlink-free standalone bundle at /out.
+# pnpm's workspace node_modules uses symlinks into /repo/node_modules/.pnpm
+# that don't survive a simple COPY — `deploy` resolves them into real files.
 RUN pnpm --filter @rd-portal/api exec prisma generate \
- && pnpm --filter @rd-portal/api build
+ && pnpm --filter @rd-portal/api build \
+ && pnpm --filter @rd-portal/api deploy /out
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /repo/apps/api/dist ./dist
-COPY --from=build /repo/apps/api/node_modules ./node_modules
-COPY --from=build /repo/apps/api/prisma ./prisma
-COPY --from=build /repo/apps/api/package.json ./package.json
+COPY --from=build /out ./
 EXPOSE 3001
 USER node
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
