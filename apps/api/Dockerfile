@@ -21,8 +21,10 @@ RUN pnpm --filter @rd-portal/api exec prisma generate \
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
+# OpenSSL is required by Prisma engines at runtime; alpine doesn't ship it.
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 COPY --from=build /out ./
 EXPOSE 3001
 USER node
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/main.js"]
