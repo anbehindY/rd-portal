@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.7
 FROM node:20-alpine AS base
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 WORKDIR /repo
 
@@ -12,18 +13,17 @@ RUN pnpm install --frozen-lockfile --filter @rd-portal/api...
 
 FROM deps AS build
 COPY apps/api ./apps/api
-# Deploy into /app directly (matches the runtime WORKDIR). pnpm deploy bakes
-# absolute paths into bin wrappers' NODE_PATH, so the path must match at runtime.
-RUN pnpm --filter @rd-portal/api exec prisma generate \
- && pnpm --filter @rd-portal/api build \
- && pnpm --filter @rd-portal/api deploy /app
+WORKDIR /repo/apps/api
+RUN pnpm exec prisma generate && pnpm build
 
+# Preserve the pnpm workspace layout (including .pnpm/ virtual store and
+# generated .prisma/client) by copying the entire /repo tree. Simpler and
+# more reliable than `pnpm deploy` for mixed pnpm/workspace/generator flows.
 FROM node:20-alpine AS runtime
-WORKDIR /app
-# OpenSSL is required by Prisma engines at runtime; alpine doesn't ship it.
 RUN apk add --no-cache openssl
+WORKDIR /repo/apps/api
 ENV NODE_ENV=production
-COPY --from=build --chown=node:node /app /app
+COPY --from=build --chown=node:node /repo /repo
 EXPOSE 3001
 USER node
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/main.js"]
