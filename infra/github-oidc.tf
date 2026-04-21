@@ -83,6 +83,13 @@ resource "aws_iam_role_policy" "github_deploy" {
         ]
         Resource = "*"
       },
+      {
+        # The workflow fetches the ALB DNS to bake into build outputs.
+        Sid      = "ElbRead"
+        Effect   = "Allow"
+        Action   = ["elasticloadbalancing:DescribeLoadBalancers"]
+        Resource = "*"
+      },
     ]
   })
 }
