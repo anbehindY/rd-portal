@@ -1,0 +1,76 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, out-of-scope]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC
+
+env:
+  AWS_REGION: ap-southeast-1
+  CLUSTER: rd-portal
+  API_SERVICE: rd-portal-api
+  WEB_SERVICE: rd-portal-web
+  API_REPO: rd-portal-api
+  WEB_REPO: rd-portal-web
+
+jobs:
+  deploy:
+    name: Build, push, roll
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.API_REPO }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.API_REPO }}:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build & push Web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.WEB_REPO }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.WEB_REPO }}:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Roll ECS services
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service "$API_SERVICE" --force-new-deployment >/dev/null
+          aws ecs update-service --cluster "$CLUSTER" --service "$WEB_SERVICE" --force-new-deployment >/dev/null
+
+      - name: Wait for services stable
+        run: |
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$API_SERVICE" "$WEB_SERVICE"

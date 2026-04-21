@@ -25,3 +25,8 @@ output "cluster_name" {
 output "region" {
   value = var.region
 }
+
+output "github_deploy_role_arn" {
+  value       = aws_iam_role.github_deploy.arn
+  description = "Paste into GitHub → Settings → Secrets → Actions as AWS_DEPLOY_ROLE_ARN"
+}

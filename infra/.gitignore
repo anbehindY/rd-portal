@@ -4,4 +4,5 @@
 *.tfstate.backup
 *.tfvars
 !*.tfvars.example
+tfplan
 crash.log
