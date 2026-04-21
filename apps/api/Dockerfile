@@ -6,6 +6,8 @@ WORKDIR /repo
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
+# Needed by the `postinstall: prisma generate` script.
+COPY apps/api/prisma apps/api/prisma
 RUN pnpm install --frozen-lockfile --filter @rd-portal/api...
 
 FROM deps AS build
